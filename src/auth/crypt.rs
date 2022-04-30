@@ -1,6 +1,6 @@
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Result};
 use std::num::Wrapping;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 pub fn scramble_modulus(modulus: &mut [u8]) {
     for i in 0..4 {
@@ -67,8 +67,7 @@ mod tests {
     #[test]
     fn scramble_init_success() {
         // Arrange
-        let mut buffer = hex::decode("010203040506070800000000").
-            expect("Failed to decode buffer");
+        let mut buffer = hex::decode("010203040506070800000000").expect("Failed to decode buffer");
         let size = buffer.len() - BLOCK_SIZE;
         let key = -559038737;
 
@@ -83,8 +82,7 @@ mod tests {
     #[test]
     fn scramble_init_fail() {
         // Arrange
-        let mut buffer = hex::decode("0102030405060708").
-            expect("Failed to decode buffer");
+        let mut buffer = hex::decode("0102030405060708").expect("Failed to decode buffer");
         let size = buffer.len();
         let key = -559038737;
 
