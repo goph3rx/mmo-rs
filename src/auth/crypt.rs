@@ -36,8 +36,8 @@ pub fn scramble_init(buffer: &mut [u8], size: usize, key: i32) -> Result<()> {
 
 pub fn blowfish_compat(buffer: &mut [u8]) {
     for offset in (0..buffer.len()).step_by(BLOCK_SIZE) {
-        buffer.swap(offset, offset+3);
-        buffer.swap(offset+1, offset+2);
+        buffer.swap(offset, offset + 3);
+        buffer.swap(offset + 1, offset + 2);
     }
 }
 
@@ -109,6 +109,6 @@ mod tests {
         blowfish_compat(&mut buffer);
 
         // Assert
-        assert_eq!(hex::encode(buffer),"0403020108070605");
+        assert_eq!(hex::encode(buffer), "0403020108070605");
     }
 }
