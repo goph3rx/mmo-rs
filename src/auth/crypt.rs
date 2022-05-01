@@ -1,6 +1,9 @@
+use crate::auth::BLOCK_SIZE;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use openssl::symm::{Cipher, Crypter, Mode};
 use std::io::{Cursor, Result};
 use std::num::Wrapping;
+use std::sync::{Arc, Mutex};
 
 pub fn scramble_modulus(modulus: &mut [u8]) {
     for i in 0..4 {
@@ -16,8 +19,6 @@ pub fn scramble_modulus(modulus: &mut [u8]) {
         modulus[i + 64] ^= modulus[i];
     }
 }
-
-const BLOCK_SIZE: usize = 4;
 
 pub fn scramble_init(buffer: &mut [u8], size: usize, key: i32) -> Result<()> {
     // Scramble
@@ -41,9 +42,34 @@ pub fn blowfish_compat(buffer: &mut [u8]) {
     }
 }
 
+pub struct AuthClientCrypt {
+    pub encrypt: Crypter,
+    pub decrypt: Crypter,
+}
+
+impl AuthClientCrypt {
+    pub fn new(key: &[u8]) -> Result<Arc<Mutex<Self>>> {
+        let mut encrypt = Crypter::new(Cipher::bf_ecb(), Mode::Encrypt, key, None)?;
+        encrypt.pad(false);
+        let mut decrypt = Crypter::new(Cipher::bf_ecb(), Mode::Decrypt, key, None)?;
+        decrypt.pad(false);
+
+        Ok(Arc::new(Mutex::new(Self { encrypt, decrypt })))
+    }
+
+    pub fn update_key(&mut self, key: &[u8]) -> Result<()> {
+        self.encrypt = Crypter::new(Cipher::bf_ecb(), Mode::Encrypt, key, None)?;
+        self.encrypt.pad(false);
+        self.decrypt = Crypter::new(Cipher::bf_ecb(), Mode::Decrypt, key, None)?;
+        self.decrypt.pad(false);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::auth::INIT_KEY;
 
     #[test]
     fn scramble_modulus_success() {
@@ -110,5 +136,27 @@ mod tests {
 
         // Assert
         assert_eq!(hex::encode(buffer), "0403020108070605");
+    }
+
+    #[test]
+    fn crypt_new() {
+        // Act
+        let result = AuthClientCrypt::new(INIT_KEY);
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
+    }
+
+    #[test]
+    fn crypt_update_key() {
+        // Arrange
+        let crypt = AuthClientCrypt::new(INIT_KEY).expect("Failed to new");
+        let mut state = crypt.lock().expect("Failed to lock");
+
+        // Act
+        let result = state.update_key(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
     }
 }
