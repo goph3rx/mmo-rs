@@ -18,6 +18,12 @@ pub trait WriteMMO: Write {
         self.write_i8(n)
     }
 
+    /// Write H value (2 bytes).
+    #[inline]
+    fn write_h(&mut self, n: i16) -> Result<()> {
+        self.write_i16::<LittleEndian>(n)
+    }
+
     /// Write D value (4 bytes).
     #[inline]
     fn write_d(&mut self, n: i32) -> Result<()> {
@@ -65,6 +71,22 @@ mod tests {
         assert_eq!(result.is_ok(), true);
         assert_eq!(position, 1);
         assert_eq!(hex::encode(&buffer[..position]), "7b");
+    }
+
+    #[test]
+    fn write_h() {
+        // Arrange
+        let mut buffer = vec![0; BUFFER_SIZE];
+        let mut writer = Cursor::new(&mut buffer);
+
+        // Act
+        let result = writer.write_h(0x105c);
+
+        // Assert
+        let position = writer.position() as usize;
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(position, 2);
+        assert_eq!(hex::encode(&buffer[..position]), "5c10");
     }
 
     #[test]
