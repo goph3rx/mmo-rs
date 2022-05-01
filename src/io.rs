@@ -1,8 +1,8 @@
 //! Low-level primitives for IO operations.
 
-use std::io::{Result, Write};
+use std::io::{Read, Result, Write};
 
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 /// Extends the writer to support writing MMO values.
 pub trait WriteMMO: Write {
@@ -32,6 +32,23 @@ pub trait WriteMMO: Write {
 }
 
 impl<T: Write> WriteMMO for T {}
+
+/// Extends the reader to support reading MMO values.
+pub trait ReadMMO: Read {
+    /// Read H value (2 bytes).
+    #[inline]
+    fn read_h(&mut self) -> Result<i16> {
+        self.read_i16::<LittleEndian>()
+    }
+
+    /// Read D value (4 bytes).
+    #[inline]
+    fn read_d(&mut self) -> Result<i32> {
+        self.read_i32::<LittleEndian>()
+    }
+}
+
+impl<T: Read> ReadMMO for T {}
 
 #[cfg(test)]
 mod tests {
@@ -103,5 +120,33 @@ mod tests {
         assert_eq!(result.is_ok(), true);
         assert_eq!(position, 4);
         assert_eq!(hex::encode(&buffer[..position]), "7b6a5c10");
+    }
+
+    #[test]
+    fn read_h() {
+        // Arrange
+        let buffer = hex::decode("7b10").expect("Failed to decode buffer");
+        let mut reader = Cursor::new(&buffer);
+
+        // Act
+        let result = reader.read_h();
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap(), 0x107b);
+    }
+
+    #[test]
+    fn read_d() {
+        // Arrange
+        let buffer = hex::decode("7b6a5c10").expect("Failed to decode buffer");
+        let mut reader = Cursor::new(&buffer);
+
+        // Act
+        let result = reader.read_d();
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap(), 0x105C6A7B);
     }
 }
