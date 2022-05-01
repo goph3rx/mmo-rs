@@ -34,6 +34,13 @@ pub fn scramble_init(buffer: &mut [u8], size: usize, key: i32) -> Result<()> {
     Ok(())
 }
 
+pub fn blowfish_compat(buffer: &mut [u8]) {
+    for offset in (0..buffer.len()).step_by(BLOCK_SIZE) {
+        buffer.swap(offset, offset + 3);
+        buffer.swap(offset + 1, offset + 2);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,5 +98,17 @@ mod tests {
 
         // Assert
         assert_eq!(result.is_err(), true);
+    }
+
+    #[test]
+    fn blowfish_compat_success() {
+        // Arrange
+        let mut buffer = hex::decode("0102030405060708").expect("Failed to decode buffer");
+
+        // Act
+        blowfish_compat(&mut buffer);
+
+        // Assert
+        assert_eq!(hex::encode(buffer), "0403020108070605");
     }
 }
