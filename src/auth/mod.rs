@@ -1,6 +1,7 @@
 //! Auth server implementation.
 mod crypt;
 mod message;
+mod sender;
 
 /// Size of the packet header.
 pub const HEADER_SIZE: usize = 2;
