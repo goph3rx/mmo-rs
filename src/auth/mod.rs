@@ -1,4 +1,5 @@
 //! Auth server implementation.
+mod client;
 mod crypt;
 mod message;
 mod sender;
