@@ -41,7 +41,10 @@ impl AuthClientSenderImpl {
         if size < BUFFER_SIZE {
             Ok(size)
         } else {
-            Err(Error::from(ErrorKind::InvalidData))
+            Err(Error::new(
+                ErrorKind::InvalidData,
+                format!("Buffer size ({}) exceeded limit ({})", size, BUFFER_SIZE),
+            ))
         }
     }
 }
@@ -88,7 +91,7 @@ impl AuthClientSender for AuthClientSenderImpl {
             let mut crypt = self
                 .crypt
                 .lock()
-                .map_err(|_| Error::from(ErrorKind::Other))?;
+                .map_err(|_| Error::new(ErrorKind::Other, "Cannot unlock crypt"))?;
             size = crypt
                 .encrypt
                 .update(&self.packet[..size], &mut self.buffer)?;
