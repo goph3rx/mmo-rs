@@ -45,7 +45,7 @@ impl AuthClient {
     }
 
     fn state(&self) -> std::io::Result<MutexGuard<AuthClientState>> {
-        self.state.lock().map_err(|_| Error::from(ErrorKind::Other))
+        self.state.lock().map_err(|_| Error::new(ErrorKind::Other, "Cannot unlock state"))
     }
 }
 
