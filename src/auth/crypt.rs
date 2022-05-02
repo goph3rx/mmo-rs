@@ -42,6 +42,15 @@ pub fn blowfish_compat(buffer: &mut [u8]) {
     }
 }
 
+pub fn checksum(buffer: &[u8]) -> Result<i32> {
+    let mut result = 0;
+    for offset in (0..buffer.len()).step_by(BLOCK_SIZE) {
+        let block = Cursor::new(&buffer[offset..]).read_i32::<LittleEndian>()?;
+        result ^= block;
+    }
+    Ok(result)
+}
+
 pub struct AuthClientCrypt {
     pub encrypt: Crypter,
     pub decrypt: Crypter,
@@ -158,5 +167,18 @@ mod tests {
 
         // Assert
         assert_eq!(result.is_ok(), true);
+    }
+
+    #[test]
+    fn checksum_success() {
+        // Arrange
+        let buffer = hex::decode("0102030405060708").expect("Failed to decode buffer");
+
+        // Act
+        let result = checksum(&buffer);
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap(), 0xc040404);
     }
 }
