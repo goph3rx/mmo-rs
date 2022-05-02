@@ -41,7 +41,10 @@ impl AuthClientSenderImpl {
         if size < BUFFER_SIZE {
             Ok(size)
         } else {
-            Err(Error::new(ErrorKind::InvalidData, format!("Buffer size ({}) exceeded limit ({})", size, BUFFER_SIZE)))
+            Err(Error::new(
+                ErrorKind::InvalidData,
+                format!("Buffer size ({}) exceeded limit ({})", size, BUFFER_SIZE),
+            ))
         }
     }
 }
