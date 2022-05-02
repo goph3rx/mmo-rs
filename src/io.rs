@@ -35,6 +35,12 @@ impl<T: Write> WriteMMO for T {}
 
 /// Extends the reader to support reading MMO values.
 pub trait ReadMMO: Read {
+    /// Read C value (1 byte).
+    #[inline]
+    fn read_c(&mut self) -> Result<i8> {
+        self.read_i8()
+    }
+
     /// Read H value (2 bytes).
     #[inline]
     fn read_h(&mut self) -> Result<i16> {
@@ -120,6 +126,20 @@ mod tests {
         assert_eq!(result.is_ok(), true);
         assert_eq!(position, 4);
         assert_eq!(hex::encode(&buffer[..position]), "7b6a5c10");
+    }
+
+    #[test]
+    fn read_c() {
+        // Arrange
+        let buffer = hex::decode("7b").expect("Failed to decode buffer");
+        let mut reader = Cursor::new(&buffer);
+
+        // Act
+        let result = reader.read_c();
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap(), 0x7b);
     }
 
     #[test]

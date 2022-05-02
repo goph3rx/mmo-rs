@@ -1,7 +1,7 @@
 use crate::auth::crypt::scramble_modulus;
-use std::io::{Result, Seek, SeekFrom, Write};
+use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom, Write};
 
-use crate::io::WriteMMO;
+use crate::io::{ReadMMO, WriteMMO};
 
 #[derive(Debug)]
 pub enum GGAuthResult {
@@ -45,6 +45,21 @@ pub fn encode(msg: ServerMessage, io: &mut (impl Write + Seek)) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[derive(PartialEq, Debug)]
+pub enum ClientMessage {
+    AuthGameGuard {},
+}
+
+pub fn decode(io: &mut (impl Read + Seek)) -> Result<ClientMessage> {
+    match io.read_c()? {
+        0x07 => Ok(ClientMessage::AuthGameGuard {}),
+        id => Err(Error::new(
+            ErrorKind::InvalidData,
+            format!("Invalid packet id (0x{:02x})", id),
+        )),
+    }
 }
 
 #[cfg(test)]
@@ -101,5 +116,37 @@ mod tests {
             hex::encode(&buffer[..position]),
             "0b0b00000000000000000000000000000000000000"
         );
+    }
+
+    #[test]
+    fn client_auth_game_guard() {
+        // Arrange
+        let buffer = hex::decode("0725c7892400000000000000000000000000000000000000")
+            .expect("Failed to decode buffer");
+        let mut reader = Cursor::new(&buffer);
+        let message = ClientMessage::AuthGameGuard {};
+
+        // Act
+        let result = decode(&mut reader);
+
+        // Assert
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap(), message);
+    }
+
+    #[test]
+    fn client_invalid() {
+        // Arrange
+        let buffer = hex::decode("ff").expect("Failed to decode buffer");
+        let mut reader = Cursor::new(&buffer);
+
+        // Act
+        let result = decode(&mut reader);
+
+        // Assert
+        assert_eq!(result.is_err(), true);
+        let err = result.unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidData);
+        assert_eq!(err.to_string(), "Invalid packet id (0xff)");
     }
 }
