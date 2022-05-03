@@ -10,7 +10,7 @@ use std::io::{Cursor, Error, ErrorKind, Result, Write};
 use std::sync::{Arc, Mutex};
 
 pub struct AuthClientSenderImpl {
-    writer: Box<dyn Write + Send>,
+    writer: Box<dyn WriteClose + Send>,
     packet: Vec<u8>,
     buffer: Vec<u8>,
     crypt: Arc<Mutex<AuthClientCrypt>>,
@@ -19,10 +19,14 @@ pub struct AuthClientSenderImpl {
 #[automock]
 pub trait AuthClientSender: Send {
     fn send(&mut self, msg: ServerMessage) -> Result<()>;
+    fn close(&self) -> Result<()>;
 }
 
 impl AuthClientSenderImpl {
-    pub fn new(writer: Box<dyn Write + Send>, crypt: Arc<Mutex<AuthClientCrypt>>) -> Box<Self> {
+    pub fn new(
+        writer: Box<dyn WriteClose + Send>,
+        crypt: Arc<Mutex<AuthClientCrypt>>,
+    ) -> Box<Self> {
         Box::new(Self {
             writer,
             packet: vec![0; BUFFER_SIZE],
@@ -113,6 +117,14 @@ impl AuthClientSender for AuthClientSenderImpl {
         self.writer.flush()?;
         Ok(())
     }
+
+    fn close(&self) -> Result<()> {
+        self.writer.close()
+    }
+}
+
+pub trait WriteClose: Write {
+    fn close(&self) -> Result<()>;
 }
 
 #[cfg(test)]
@@ -125,8 +137,11 @@ mod tests {
     mock! {
         Writer {}
         impl Write for Writer {
-            fn write(&mut self, buf: &[u8]) -> std::result::Result<usize, std::io::Error> { todo!() }
-            fn flush(&mut self) -> std::result::Result<(), std::io::Error> { todo!() }
+            fn write(&mut self, buf: &[u8]) -> Result<usize> { todo!() }
+            fn flush(&mut self) -> Result<()> { todo!() }
+        }
+        impl WriteClose for Writer {
+            fn close(&self) -> Result<()> { todo!() }
         }
     }
 
